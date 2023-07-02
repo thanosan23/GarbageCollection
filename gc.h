@@ -18,7 +18,7 @@ typedef struct {
     object *top; // points at the top of the stack
     int stackSize;
     int nObjects;
-} vm;
+} vm; // keeps track of all the memory
 
 vm *init_vm() {
     vm *ptr = (vm*)malloc(sizeof(vm));
@@ -69,14 +69,20 @@ object *add_string(vm *ptr, char *value) {
     return obj;
 }
 
+void mark_dfs(vm *ptr, object *obj) {
+    if(obj == NULL) return;
+    if(obj->marked) return;
+    obj->marked = 1;
+    mark_dfs(ptr, obj->next);
+}
+
 // uses the mark and sweep algorithm
 void garbage_collect(vm *ptr) {
     int startObjects = ptr->nObjects; // store the amount of objects during the start of the garbage collection
 
     // mark all objects on the stack
     for(int i = 0; i < ptr->stackSize; i++) {
-        if(ptr->stack[i] == NULL) break;
-        ptr->stack[i]->marked = 1;
+        mark_dfs(ptr, ptr->stack[i]);
     }
     // sweep (remove unmarked objects)
     object **cur = &ptr->top; // store memory address
@@ -84,8 +90,8 @@ void garbage_collect(vm *ptr) {
         if((*cur)->marked == 0) {
             object *to_remove = *cur;
             *cur = (*cur)->next;
-            free(to_remove);
             ptr->nObjects -= 1;
+            free(to_remove);
         } else {
             (*cur)->marked = 0;
             cur = &(*cur)->next;

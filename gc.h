@@ -1,3 +1,5 @@
+#ifndef GC
+#define GC
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -107,3 +109,4 @@ void free_vm(vm *ptr) {
     ptr->stackSize = 0;
     free(ptr);
 }
+#endif

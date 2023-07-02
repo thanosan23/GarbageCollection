@@ -1,14 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define STACK_SIZE 1028
+
 typedef struct object_t {
-    int value; // TODO: be able to store multiple different data types
+    union {
+        int value_int; // integer
+        char *value_str; // string
+    };
     struct object_t *next;
     int marked; // for garbage collection
 } object;
 
 typedef struct {
-    object *stack[128];
+    object *stack[STACK_SIZE];
     object *root;
     int stackSize;
     int nObjects;
@@ -27,10 +32,28 @@ object *pop_object(vm *ptr) {
     return ptr->stack[ptr->stackSize];
 }
 
-object *add_object(vm *ptr, int value) {
+object *add_int(vm *ptr, int value) {
     // create object
     object *obj = malloc(sizeof(object));
-    obj->value = value;
+    obj->value_str = "test";
+    obj->next = ptr->root;
+    obj->marked = 0;
+
+    // update vm
+    ptr->root = obj;
+    ptr->nObjects += 1;
+
+    // update the stack
+    ptr->stack[ptr->stackSize] = obj;
+    ptr->stackSize+=1;
+
+    return obj;
+}
+
+object *add_string(vm *ptr, char *value) {
+    // create object
+    object *obj = malloc(sizeof(object));
+    obj->value_str = value;
     obj->next = ptr->root;
     obj->marked = 0;
 
@@ -80,10 +103,16 @@ void free_vm(vm *ptr) {
 
 int main() {
     vm *machine = init_vm();
-    object* obj1 = add_object(machine, 5);
-    object* obj2 = add_object(machine, 10);
+    // create objects
+    object* obj1 = add_int(machine, 5);
+    object* obj2 = add_string(machine, "test");
+
+    // pop an object out of the staack
     pop_object(machine);
+
+    // garbage collect the objects
     garbage_collect(machine);
+
     free_vm(machine);
     return 0;
 }

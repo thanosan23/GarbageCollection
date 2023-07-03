@@ -5,6 +5,9 @@
 
 #define STACK_SIZE 1028
 
+// ========
+// OBJECT
+// ========
 typedef struct object_t {
     union {
         int value_int; // integer
@@ -13,8 +16,22 @@ typedef struct object_t {
     struct object_t *next; // keep a linked list
 
     int marked; // for garbage collection
+                //
 } object;
 
+void update_int(object *obj, int value) {
+    obj->value_int = value;
+}
+void update_str(object *obj, char *value) {
+    obj->value_str = value;
+}
+
+#define update(obj, value) \
+    _Generic((value), int: update_int, char*: update_str)(obj, value)
+
+// =================
+// VIRTUAL MACHINE
+// =================
 typedef struct {
     object *stack[STACK_SIZE];
     object *top; // points at the top of the stack
@@ -22,7 +39,8 @@ typedef struct {
     int nObjects;
 } vm; // keeps track of all the memory
 
-vm *init_vm() {
+// initialize garbage collection
+vm *init_gc() {
     vm *ptr = (vm*)malloc(sizeof(vm));
     ptr->top = NULL; // maintains a linked list
     ptr->stackSize = 0;
@@ -70,6 +88,10 @@ object *add_string(vm *ptr, char *value) {
 
     return obj;
 }
+
+// ===================
+// GARBAGE COLLECTION
+// ===================
 
 void mark_dfs(vm *ptr, object *obj) {
     if(obj == NULL) return;
